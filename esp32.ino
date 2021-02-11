@@ -5,6 +5,9 @@
 #include <vector>
 
 #include <WiFi.h>
+
+//TODO - transition to "ESPAsyncWebServer.h"
+//  https://shawnhymel.com/1882/how-to-create-a-web-server-with-websockets-using-an-esp32-in-arduino/
 #include <WebServer.h>
 
 #define MAX_PINS 40
@@ -119,6 +122,7 @@ void setup()
 
     //start registering callbacks
     server.on("/", handle_root);
+    server.onNotFound(handleNotFound);
 
     Serial.println("Initialization Completed.");
 }
@@ -156,4 +160,16 @@ void loop()
 
 void handle_root(){
     Serial.println("root request");
+    server.send(200, "text/html",
+"<body><h1>200 Success</h1></body>"
+    );
+}
+
+void handleNotFound(){
+    //called on page not found (404)
+    Serial.println("Serving 404 Error");
+    server.send(404, "text/html",
+"<body><h1>404 Error</h1></body>"
+    );
+
 }
