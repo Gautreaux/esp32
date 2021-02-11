@@ -1,5 +1,6 @@
 <head>
     <script src = "index.js"></script>
+    <script src = "functions.js"></script>
     <link rel="stylesheet" href="style.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 </head>
@@ -19,6 +20,22 @@
             <input type="text" id="testMessageInput">
             <button onclick="sendTestMessage()">Send</button>
         </div>  
+        <div class="flexContent">
+            <H4>LED1</H4>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_RED">RED<br>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_GREEN">GREEN<br>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_BLUE">BLUE<br>
+        </div>
+        <div class="flexContent">
+            <H4>LED2</H4>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_RED">RED<br>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_GREEN">GREEN<br>
+            <input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_BLUE">BLUE<br>
+        </div>
+        <div class="flexContent">
+            <H4>Button State</H4>
+            <p id="ButtonReadout">UKN</p>
+        </div>
         <!-- <div class="flexContent"></div> -->
     </div>
 </body>

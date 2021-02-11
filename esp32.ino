@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <WiFi.h>
+#include "webpage.h"
 
 //TODO - transition to "ESPAsyncWebServer.h"
 //  https://shawnhymel.com/1882/how-to-create-a-web-server-with-websockets-using-an-esp32-in-arduino/
@@ -21,13 +22,15 @@
 #define GREEN_1 17
 #define BLUE_1 18
 
+#define BUTTON_PIN 23
+
 //when enabled will cause the ESP to connect
 //  to an existing wifi network given by the information,
 //  in the clientSecrets.h file
 //when disabled, will cause the ESP to
 //  host a new wifi network with the information
 //  in the connectionSecrets.h file
-#define RUN_AS_CLIENT
+// #define RUN_AS_CLIENT
 
 #ifdef RUN_AS_CLIENT
 #include "clientSecrets.h"
@@ -38,6 +41,9 @@
 //21, 22 removed because SDA/SCL
 // const std::vector<int> gpioPins{1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39};
 const std::vector<int> gpioPins{RED_1, GREEN_1, BLUE_1, RED_2, GREEN_2, BLUE_2};
+
+//Tracks if button was pressed in the last loop (true)
+bool wasButtonPressedLastLoop = false;
 
 WebServer server(80); 
 WebSocketsServer wss(81);
@@ -110,12 +116,26 @@ void setup()
     Serial.print("Waiting for WIFI connection...");
     //count # of retries
     int retryCounter = 0;
+    bool toggle = false;
     while(WiFi.status() != WL_CONNECTED){
         delay(1000);
         Serial.print(++retryCounter);
         Serial.print(" ");
+
+        //light show for while retrying
+        if((toggle = !toggle)){
+            digitalWrite(RED_1, HIGH);
+            digitalWrite(RED_2, LOW);
+        }else{
+            digitalWrite(RED_1, LOW);
+            digitalWrite(RED_2, HIGH);
+        }
     }
     Serial.println("Connected");
+
+    //turn off the light show
+    digitalWrite(RED_1, LOW);
+    digitalWrite(RED_2, LOW);
 #else
     WiFi.mode(WIFI_AP);
     WiFi.softAP(SSID, PASSWORD);
@@ -145,6 +165,22 @@ void loop()
     server.handleClient();
     wss.loop();
 
+    if(digitalRead(BUTTON_PIN) == HIGH){
+        if(wasButtonPressedLastLoop == false){
+            wasButtonPressedLastLoop = true;
+            // Serial.println("PRESSED");
+            wss.broadcastTXT("b1");
+        }
+    }else{
+        if(wasButtonPressedLastLoop == true){
+            wasButtonPressedLastLoop = false;
+            // Serial.println("RELEASED");
+            wss.broadcastTXT("b0");
+        }
+    }
+
+    //check if the button is pressed now
+
     // delay(1000);
 
     // for (auto i : gpioPins)
@@ -173,9 +209,7 @@ void loop()
 //called on requests for the root webpage
 void handle_root(){
     Serial.println("root request");
-    server.send(200, "text/html",
-"<body><h1>200 Success</h1></body>"
-    );
+    server.send(200, "text/html", webpage_html);
 }
 
 //called on page not found (404)
@@ -211,8 +245,10 @@ void handle_webSocketEvent(uint8_t num, WStype_t type,
                     num, ip[0], ip[1], ip[2], ip[3], payload);
         break;
     case WStype_TEXT:
-        Serial.printf("[wss%u] Received Message (%d): %s\n", 
-            num, length, payload);
+        if(!messageHandler(payload, length)){
+            Serial.printf("[wss%u] Unknown Message (%d): %s\n", 
+                num, length, payload);
+        }
         // Serial.printf("[wss%u] MSG Received\n", num);
         break;
     //dont really want this cause there are a-lot of other
@@ -221,4 +257,21 @@ void handle_webSocketEvent(uint8_t num, WStype_t type,
     // default:
     //     break;
     }
+}
+
+//called to process text messages
+//  returns true if message was processed ok
+//  else returns false
+bool messageHandler(uint8_t* const payload, const size_t length){
+    switch (payload[0])
+    {
+    case 'L':
+        for(unsigned int i = 0; i < 6; i++){
+            digitalWrite(gpioPins.at(i), ((payload[i+1] == '0') ? LOW : HIGH));
+        }
+        return true;
+    default:
+        return false;
+    }
+    return false;
 }

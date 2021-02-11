@@ -1,3 +1,6 @@
+const char webpage_html[] PROGMEM = R"&(
+<head>
+<script>
 mySocket = null; //global variable for storing the socket 
 
 //TODO - fix this for the future
@@ -146,3 +149,107 @@ function processCommand(cmd){
 
     return false;
 }
+</script>
+<script>
+function updateLED() {
+    let led_elements = document.getElementsByClassName("LEDCHECK");
+
+    var s = "L";
+
+    for(i = 0; i < led_elements.length; i++){
+        if(led_elements[i].checked){
+            s += "1";
+        }else{
+            s += "0";
+        }
+    }
+    // console.log(s);
+    send(s);
+}
+
+function setButtonReadout(b){
+    let e = document.getElementById("ButtonReadout");
+    if(b){
+        e.innerHTML = "Pressed";
+    }else{
+        e.innerHTML = "Released";
+    }
+}
+
+//connect to user specified server
+function manualConnection(){
+    let path = document.getElementById("manualConnection").value;
+
+    if(path.length == 0 || path.indexOf(':') == -1){
+        //TODO - make more apparent on the screen?
+        console.log("Invalid path construction.");
+        return;
+    }
+
+    let i = path.indexOf("ws://");
+    if(i == -1){
+        path = "ws://" + path;
+    }
+    else if(i != 0){
+        //TODO - make more apparent on the screen?
+        console.log("Invalid path, protocol cannot appear mid path.");
+        return;
+    }
+
+    console.log("Manual connection path ok with: " + path);
+
+    connect(path);
+}
+</script>
+<style>
+
+#contentBound{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.flexContent{
+    border: 2px solid black;
+    background-color: aqua;  
+    margin: 5px;
+}
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+</head>
+
+<body onload="initFunction()" onunload="cleanupFunction()" id="body">
+Turns green on websockets connection, red on failure
+<div id="contentBound">
+<div class="flexContent">
+<H4>Manual Connection</H4>
+<button onclick="manualConnection()">Connect</button>
+<input type="path", id="manualConnection">
+<div id="hostField">HOST</div>
+<div id="portField">PORT</div>
+</div>
+<div class="flexContent">
+<H4>Test Message</H4>
+<input type="text" id="testMessageInput">
+<button onclick="sendTestMessage()">Send</button>
+</div>
+<div class="flexContent">
+<H4>LED1</H4>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_RED">RED<br>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_GREEN">GREEN<br>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED1_BLUE">BLUE<br>
+</div>
+<div class="flexContent">
+<H4>LED2</H4>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_RED">RED<br>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_GREEN">GREEN<br>
+<input type="checkbox", onclick="updateLED()", class="LEDCHECK", id="LED2_BLUE">BLUE<br>
+</div>
+<div class="flexContent">
+<H4>Button State</H4>
+<p id="ButtonReadout">UKN</p>
+</div>
+<!-- <div class="flexContent"></div> -->
+</div>
+</body>
+)&";
