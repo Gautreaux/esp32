@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <WiFi.h>
-#include "connectionSecrets.h"
+#include <WebServer.h>
 
 #define MAX_PINS 40
 
@@ -16,11 +16,20 @@
 #define GREEN_1 17
 #define BLUE_1 18
 
+#define RUN_AS_CLIENT
+
+#ifdef RUN_AS_CLIENT
+#include "clientSecrets.h"
+#else
+#include "connectionSecrets.h"
+#endif
+
 //21, 22 removed because SDA/SCL
 // const std::vector<int> gpioPins{1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39};
 const std::vector<int> gpioPins{RED_1, GREEN_1, BLUE_1, RED_2, GREEN_2, BLUE_2};
 
-WiFiServer server(80); 
+WebServer server(80); 
+
 
 // Adafruit_MCP23017 mcp;
 
@@ -85,21 +94,39 @@ void setup()
     //     pinMode(i, OUTPUT);
     // }
 
+#ifdef RUN_AS_CLIENT
+    WiFi.begin(SSID, PASSWORD);
+    Serial.print("Waiting for WIFI connection...");
+    //count # of retries
+    int retryCounter = 0;
+    while(WiFi.status() != WL_CONNECTED){
+        delay(1000);
+        Serial.print(++retryCounter);
+        Serial.print(" ");
+    }
+    Serial.println("Connected");
+#else
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(SSID, PASSWORD);
+#endif
+    Serial.print("IP Address: ");
+    Serial.println(WiFi.localIP());
+
+    
     Serial.println("Starting Webserver...");
 
-    WiFi.softAP(ssid, password);
-
-    IPAddress IP = WiFi.softAPIP();
-    Serial.print("IP Address: ");
-    Serial.println(IP);
-
     server.begin();
+
+    //start registering callbacks
+    server.on("/", handle_root);
 
     Serial.println("Initialization Completed.");
 }
 
 void loop()
 {
+
+    server.handleClient();
 
     delay(1000);
 
@@ -124,4 +151,9 @@ void loop()
     // {
     //     mcp.digitalWrite(i, LOW);
     // }
+}
+
+
+void handle_root(){
+    Serial.println("root request");
 }
