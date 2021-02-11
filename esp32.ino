@@ -10,6 +10,8 @@
 //  https://shawnhymel.com/1882/how-to-create-a-web-server-with-websockets-using-an-esp32-in-arduino/
 #include <WebServer.h>
 
+#include <WebSocketsServer.h>
+
 #define MAX_PINS 40
 
 #define GREEN_2 13
@@ -19,6 +21,12 @@
 #define GREEN_1 17
 #define BLUE_1 18
 
+//when enabled will cause the ESP to connect
+//  to an existing wifi network given by the information,
+//  in the clientSecrets.h file
+//when disabled, will cause the ESP to
+//  host a new wifi network with the information
+//  in the connectionSecrets.h file
 #define RUN_AS_CLIENT
 
 #ifdef RUN_AS_CLIENT
@@ -32,7 +40,7 @@
 const std::vector<int> gpioPins{RED_1, GREEN_1, BLUE_1, RED_2, GREEN_2, BLUE_2};
 
 WebServer server(80); 
-
+WebSocketsServer wss(81);
 
 // Adafruit_MCP23017 mcp;
 
@@ -122,7 +130,11 @@ void setup()
 
     //start registering callbacks
     server.on("/", handle_root);
-    server.onNotFound(handleNotFound);
+    server.onNotFound(handle_notFound);
+
+    Serial.println("Starting Websockets Server...");
+    wss.begin();
+    wss.onEvent(handle_webSocketEvent);
 
     Serial.println("Initialization Completed.");
 }
@@ -131,33 +143,34 @@ void loop()
 {
 
     server.handleClient();
+    wss.loop();
 
-    delay(1000);
+    // delay(1000);
 
-    for (auto i : gpioPins)
-    {
-        digitalWrite(i, LOW);
-    }
-
-    // for (int i = 0; i < 16; i++)
+    // for (auto i : gpioPins)
     // {
-    //     mcp.digitalWrite(i, HIGH);
+    //     digitalWrite(i, LOW);
     // }
 
-    delay(1000);
+    // // for (int i = 0; i < 16; i++)
+    // // {
+    // //     mcp.digitalWrite(i, HIGH);
+    // // }
 
-    for (auto i : gpioPins)
-    {
-        digitalWrite(i, HIGH);
-    }
+    // delay(1000);
 
-    // for (int i = 0; i < 16; i++)
+    // for (auto i : gpioPins)
     // {
-    //     mcp.digitalWrite(i, LOW);
+    //     digitalWrite(i, HIGH);
     // }
+
+    // // for (int i = 0; i < 16; i++)
+    // // {
+    // //     mcp.digitalWrite(i, LOW);
+    // // }
 }
 
-
+//called on requests for the root webpage
 void handle_root(){
     Serial.println("root request");
     server.send(200, "text/html",
@@ -165,11 +178,47 @@ void handle_root(){
     );
 }
 
-void handleNotFound(){
-    //called on page not found (404)
+//called on page not found (404)
+void handle_notFound(){
     Serial.println("Serving 404 Error");
     server.send(404, "text/html",
 "<body><h1>404 Error</h1></body>"
     );
 
+}
+
+//called on any websockets connection
+//  num     - connection id of the client connection
+//  type    - the type of the connection
+//  payload - pointer to message buffer
+//              - payload is null terminated
+//  length  - the length of the payload (in bytes)
+void handle_webSocketEvent(uint8_t num, WStype_t type,
+                           uint8_t *payload, size_t length)
+{
+    IPAddress ip = wss.remoteIP(num);
+    switch (type)
+    {
+    case WStype_DISCONNECTED:
+        // a client has
+        //  timed-out or
+        //  indicated that the connection is closing
+        Serial.printf("[wss%u] Disconnected.\n", num);
+        break;
+    case WStype_CONNECTED:
+        //a client has connected
+        Serial.printf("[wss%u] Connected from %d.%d.%d.%d url: %s\n",
+                    num, ip[0], ip[1], ip[2], ip[3], payload);
+        break;
+    case WStype_TEXT:
+        Serial.printf("[wss%u] Received Message (%d): %s\n", 
+            num, length, payload);
+        // Serial.printf("[wss%u] MSG Received\n", num);
+        break;
+    //dont really want this cause there are a-lot of other
+    //  message types that we never want to see
+    //  such as ping/pong messages
+    // default:
+    //     break;
+    }
 }

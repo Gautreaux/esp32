@@ -1,0 +1,12 @@
+
+#contentBound{
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.flexContent{
+    border: 2px solid black;
+    background-color: aqua;  
+    margin: 5px;
+}
