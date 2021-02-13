@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import re as regex
 
@@ -13,14 +14,14 @@ RSTRING_DELIM = '&'
 def fileType(file:str) -> str:
     return file[file.rfind('.'):].lower()
 
-def genericEmbed(file:str, tag:str) -> str:
+def genericEmbed(filePath:str, tag:str) -> str:
     outData = ""
     try:
-        with open(file, 'r') as jsF:
+        with open(filePath, 'r') as jsF:
             for line in jsF:
                 outData += line
     except FileNotFoundError as f:
-        print(f"Wile trying to embed {file}, got file not found error.")
+        print(f"Wile trying to embed {filePath}, got file not found error.")
         raise f
 
     return f"<{tag}>\n{outData}\n</{tag}>"
@@ -35,22 +36,22 @@ def embedCSS(cssFile:str) -> str:
 def addEscapes(line:str) -> str:
     return line
 
-def translatePage(sourceFile:str) -> bool:
-    assert(fileType(sourceFile) == SOURCE_FILETYPE)
+def translatePage(sourceFilePath:str) -> bool:
+    assert(fileType(sourceFilePath) == SOURCE_FILETYPE)
 
     # name translation: test.html -> test.h
-    fileRoot = sourceFile[:len(sourceFile) - len(SOURCE_FILETYPE)]
+    fileRoot = sourceFilePath[:len(sourceFilePath) - len(SOURCE_FILETYPE)]
     print(f"Processing '{fileRoot}', '{SOURCE_FILETYPE}' -> '{TARGET_FILETYPE}'")
-    targetFile = f'{fileRoot}{TARGET_FILETYPE}'
+    targetFilePath = f'{fileRoot}{TARGET_FILETYPE}'
 
     # open the file
-    with open(sourceFile, 'r') as sf:
-        with open(targetFile, 'w') as tf:
+    with open(sourceFilePath, 'r') as sourceFile:
+        with open(targetFilePath, 'w') as targetFile:
             DELIM_CHAR = RSTRING_DELIM if RSTRING_DELIM is not None else ""
-            print(f'const char {fileRoot}_html[] PROGMEM = R"{DELIM_CHAR}(', file=tf)
+            print(f'const char {fileRoot}_html[] PROGMEM = R"{DELIM_CHAR}(', file=targetFile)
             RSTRING_CLOSE = f'){DELIM_CHAR}"'
             try:
-                for line in sf:
+                for line in sourceFile:
                     line = line.strip() # remove whitespace
                     x = regex.search(SCRIPT_SRC_REGEX, line)
                     y = regex.search(LINK_SRC_REGEX, line)
@@ -65,17 +66,27 @@ def translatePage(sourceFile:str) -> bool:
                     else:
                         outLine = line
                     
+                    #check if the ending of the rawstring is in the line
                     if RSTRING_CLOSE in outLine:
                         # if this is a common problem, we can programatically retry alternate delimeters
-                        raise RuntimeError("RString close found in outline, need alternate delim")
+                        print("Error: the rawstring delimiter was found inside the raw string.")
+                        print("Select a new delimiter and try re-running the script.")
+                        raise RuntimeError("RString close found in outline, need alternate delimiter")
 
-                    print(outLine, file=tf)
+                    print(outLine, file=targetFile)
             finally:
-                print(f'{RSTRING_CLOSE};', file=tf)
+                print(f'{RSTRING_CLOSE};', file=targetFile)
 
 
 if __name__ == "__main__":
+    now = datetime.now()
+    print(now.strftime("%d/%m/%Y %H:%M:%S"))
+
     pages = [f for f in os.listdir() if fileType(f) == SOURCE_FILETYPE]
+
+    if(len(pages) == 0):
+        print("No pages found.")
+        exit(0)
 
     print(f"Pages found: {pages}")
 

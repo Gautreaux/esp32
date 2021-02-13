@@ -2,5 +2,6 @@
     "board": "esp32:esp32:nodemcu-32s",
     "configuration": "FlashFreq=80,UploadSpeed=921600",
     "port": "COM5",
-    "sketch": "esp32.ino"
+    "sketch": "esp32.ino",
+    "prebuild": "python pageBuilder.py > pageBuilder.log"
 }
