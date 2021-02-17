@@ -29,6 +29,8 @@ function initFunction() {
 
     // window.addEventListener('resize', rescaleHandler);
     // rescaleHandler(); //run the first time
+
+    initJoysticks();
 }
 
 //connect to a websockets server at path

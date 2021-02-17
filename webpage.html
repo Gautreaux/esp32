@@ -9,7 +9,7 @@
 </head>
 
 <body onload="initFunction()" onunload="cleanupFunction()" id="body">
-    Turns green on websockets connection, red on failure    
+    Turns green on websockets connection, red on failure
     <div id="contentBound">
         <div class="flexContent">
             <H4>Manual Connection</H4>
@@ -40,6 +40,16 @@
             <p id="ButtonReadout">UKN</p>
         </div>
         <div class="flexContent", id="controlsWrapper">
+            <div class="controlStack">
+                <div class="joystickWrapper">
+                    <div class="joystickSubWrapper">
+                        <div class="inscribedCircle"><div class="limitCircle"></div></div>
+                        <div class="joystickCollider"><!--For tracking input, but not moving while redrawing-->
+                            <div class="joystick"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="controlStack">
                 <div class="joystickWrapper">
                     <div class="joystickSubWrapper">
