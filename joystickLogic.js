@@ -106,7 +106,7 @@ function joystickTouchEndFactory(joystickIndex){
 function joystickTouchMoveFactory(joystickIndex){
     return function(event){
         event.preventDefault();
-        console.log("Joystick-move index: " + joystickIndex);
+        // console.log("Joystick-move index: " + joystickIndex);
 
         var thisTouch = null;
 
@@ -166,5 +166,5 @@ function joystickResetFactory(joystickIndex){
 }
 
 function sendJoystickVector(joystickIndex, joystickVector){
-    send("J" + joystickIndex + " " + Math.round(joystickVector[0], 3) + " " + Math.round(joystickVector[1], 3))
+    send("J" + joystickIndex + " " + joystickVector[0].toFixed(3) + " " + joystickVector[1].toFixed(3));
 }

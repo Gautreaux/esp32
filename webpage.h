@@ -94,8 +94,9 @@ function onSocketReceive(event) {
 
 //sends the input parameter into the socket
 function send(data) {
+    console.log(data);
     if (mySocket == null) {
-        console.log("Cannot send data, socket is not connected.")
+        console.log("Cannot send data, socket is not connected: " + data);
     }
     else {
         mySocket.send(data);
@@ -134,6 +135,8 @@ function manualConnection(){
         console.log("Invalid path, protocol cannot appear mid path.");
         return;
     }
+
+    //TODO - check for and add port if necessary
 
     console.log("Manual connection path ok with: " + path);
 
@@ -312,7 +315,7 @@ function joystickTouchEndFactory(joystickIndex){
 function joystickTouchMoveFactory(joystickIndex){
     return function(event){
         event.preventDefault();
-        console.log("Joystick-move index: " + joystickIndex);
+        // console.log("Joystick-move index: " + joystickIndex);
 
         var thisTouch = null;
 
@@ -372,7 +375,7 @@ function joystickResetFactory(joystickIndex){
 }
 
 function sendJoystickVector(joystickIndex, joystickVector){
-    send("J" + joystickIndex + " " + Math.round(joystickVector[0], 3) + " " + Math.round(joystickVector[1], 3))
+    send("J" + joystickIndex + " " + joystickVector[0].toFixed(3) + " " + joystickVector[1].toFixed(3));
 }
 </script>
 <style>

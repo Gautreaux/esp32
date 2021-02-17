@@ -265,7 +265,6 @@ void handle_webSocketEvent(uint8_t num, WStype_t type,
 //  else returns false
 bool messageHandler(uint8_t* const payload, const size_t length){
     std::stringstream ss;
-    ss << payload;
     switch (payload[0])
     {
     case 'L':
@@ -274,20 +273,26 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         }
         return true;
     case 'J':
-        int j;
+        ss << payload;
+        char j;
         ss >> j;
         int jsID;
         ss >> jsID;
         float x,y;
         ss >> x >> y;
-        Serial.printf("J: %d %.3f %.3f\n", jsID, x, y);
+        // Serial.printf("%s\n", payload);
+        // Serial.printf("J: %d %.3f %.3f\n", jsID, x, y);
+        // Serial.printf("%d\n", jsID);
 
         if(y > .5){
-            digitalWrite(((j == 0) ? GREEN_1 : GREEN_2), HIGH);
-            digitalWrite(((j == 0) ? RED_1 : RED_2), LOW);
+            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), HIGH);
+            digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
         }else if(y < -.5){
-            digitalWrite(((j == 0) ? GREEN_1 : GREEN_2), LOW);
-            digitalWrite(((j == 0) ? RED_1 : RED_2), HIGH);
+            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
+            digitalWrite(((jsID == 0) ? RED_1 : RED_2), HIGH);
+        }else{
+            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
+            digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
         }
         return true;
     default:

@@ -91,8 +91,9 @@ function onSocketReceive(event) {
 
 //sends the input parameter into the socket
 function send(data) {
+    //console.log(data);
     if (mySocket == null) {
-        console.log("Cannot send data, socket is not connected.")
+        console.log("Cannot send data, socket is not connected: " + data);
     }
     else {
         mySocket.send(data);
@@ -131,6 +132,8 @@ function manualConnection(){
         console.log("Invalid path, protocol cannot appear mid path.");
         return;
     }
+
+    //TODO - check for and add port if necessary
 
     console.log("Manual connection path ok with: " + path);
 
