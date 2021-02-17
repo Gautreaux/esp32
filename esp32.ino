@@ -3,6 +3,7 @@
 #include <Wire.h>
 // #include "Adafruit_MCP23017.h"
 #include <vector>
+#include <sstream>
 
 #include <WiFi.h>
 #include "webpage.h"
@@ -263,11 +264,30 @@ void handle_webSocketEvent(uint8_t num, WStype_t type,
 //  returns true if message was processed ok
 //  else returns false
 bool messageHandler(uint8_t* const payload, const size_t length){
+    std::stringstream ss;
+    ss << payload;
     switch (payload[0])
     {
     case 'L':
         for(unsigned int i = 0; i < 6; i++){
             digitalWrite(gpioPins.at(i), ((payload[i+1] == '0') ? LOW : HIGH));
+        }
+        return true;
+    case 'J':
+        int j;
+        ss >> j;
+        int jsID;
+        ss >> jsID;
+        float x,y;
+        ss >> x >> y;
+        Serial.printf("J: %d %.3f %.3f\n", jsID, x, y);
+
+        if(y > .5){
+            digitalWrite(((j == 0) ? GREEN_1 : GREEN_2), HIGH);
+            digitalWrite(((j == 0) ? RED_1 : RED_2), LOW);
+        }else if(y < -.5){
+            digitalWrite(((j == 0) ? GREEN_1 : GREEN_2), LOW);
+            digitalWrite(((j == 0) ? RED_1 : RED_2), HIGH);
         }
         return true;
     default:

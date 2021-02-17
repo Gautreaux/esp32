@@ -139,11 +139,13 @@ function joystickTouchMoveFactory(joystickIndex){
             thisVector[1] /= vectorMagnitude;
         }
 
-        console.log(thisVector);
+        // console.log(thisVector);
 
         let j = Joystick_Joysticks[joystickIndex];
         j.style.left = String(thisVector[0]*Joystick_MaxMovement);
         j.style.top = String(thisVector[1]*Joystick_MaxMovement);
+
+        sendJoystickVector(joystickIndex, thisVector);
     }
 }
 
@@ -159,6 +161,10 @@ function joystickResetFactory(joystickIndex){
         Joystick_Joysticks[joystickIndex].style.left = "0";
         Joystick_Joysticks[joystickIndex].style.top = "0";
 
-        //TODO - send to webserver
+        sendJoystickVector(joystickIndex, [0,0])
     }
+}
+
+function sendJoystickVector(joystickIndex, joystickVector){
+    send("J" + joystickIndex + " " + Math.round(joystickVector[0], 3) + " " + Math.round(joystickVector[1], 3))
 }
