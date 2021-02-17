@@ -30,7 +30,7 @@
 //when disabled, will cause the ESP to
 //  host a new wifi network with the information
 //  in the connectionSecrets.h file
-// #define RUN_AS_CLIENT
+#define RUN_AS_CLIENT
 
 #ifdef RUN_AS_CLIENT
 #include "clientSecrets.h"
