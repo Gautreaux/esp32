@@ -1,0 +1,70 @@
+:root{
+    --joystickCollider-size: 30%;
+}
+
+.joystickWrapper{
+    position: relative;
+    background-color: grey;
+    width: 100%;
+}
+
+.joystickWrapper:after{
+    content: "";
+    display: block;
+    padding-bottom: 100%;
+}
+
+.joystickSubWrapper{
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.inscribedCircle{
+    --border-width: 4px;
+    height: calc(100% - 2 * var(--border-width));
+    width: calc(100% - 2 * var(--border-width));
+    border: var(--border-width) solid black;
+    border-radius: 50%;
+}
+
+.limitCircle{
+    --border-width: 2px;
+    height: calc(100% - var(--joystickCollider-size));
+    width: calc(100% - var(--joystickCollider-size));
+    border: var(--border-width) solid darkgray;
+    border-radius: 50%;
+
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+
+}
+
+.joystickCollider{
+    background-color: rgba(255, 0, 0, .2);
+    height: var(--joystickCollider-size);
+    width: var(--joystickCollider-size);
+    border-radius: 50%;
+
+
+    margin: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -ms-transform: translate(-50%, -50%);
+    transform: translate(-50%, -50%);
+}
+
+.joystick{
+    background-color: red;
+    height: 100%;
+    width: 100%;
+    border-radius: 50%;
+    position: relative;
+    left:0px;
+    top:0px;
+}
