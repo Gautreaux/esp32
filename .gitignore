@@ -1,3 +1,5 @@
 connectionSecrets.h
 clientSecrets.h
 pageBuilder.log
+
+.vscode/*
