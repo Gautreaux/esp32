@@ -32,14 +32,18 @@
 #include "connectionSecrets.h"
 #endif
 
+
 //21, 22 removed because SDA/SCL
 // const std::vector<int> gpioPins{1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39};
 
 //Tracks if button was pressed in the last loop (true)
 // bool wasButtonPressedLastLoop = false;
 
-WebServer server(80); 
-WebSocketsServer wss(81);
+#define WEBSERVER_PORT 80
+#define WEBSOCKET_PORT 81
+
+WebServer server(WEBSERVER_PORT); 
+WebSocketsServer wss(WEBSOCKET_PORT);
 
 struct MotorAbstract{
     uint8_t EN_Pin; //ON ESP32
@@ -56,6 +60,10 @@ const MotorStructs[] = {
     {26, 8, 9},
     {25, 10, 11}
 };
+
+//need all the zeros to reserve the maximum conceivable amount of space
+#define HOSTPORT_SIZE 64
+char HostPort_js[64];
 
 #define NUM_MOTORS (6)
 
@@ -99,8 +107,6 @@ void setup()
     Serial.begin(9600); // Initialize the Serial interface with baud rate of 9600
     Serial.println("Beginning Initialization.");
 
-
-
     Serial.println("Enabling MCP23017/GPIO pins");
     mcp.begin();
     for (int i = 0; i < NUM_MOTORS; i++)
@@ -142,18 +148,28 @@ void setup()
     Serial.print("IP Address: ");
     Serial.println(WiFi.localIP());
 
-    
+   
     Serial.println("Starting Webserver...");
 
     server.begin();
 
     //start registering callbacks
     server.on("/", handle_root);
+    server.on("/hostPort.js", handle_hostPort);
     server.onNotFound(handle_notFound);
 
     Serial.println("Starting Websockets Server...");
     wss.begin();
     wss.onEvent(handle_webSocketEvent);
+
+
+    // pack host and port info into the buffer
+    IPAddress ip = WiFi.localIP();
+    snprintf(HostPort_js, HOSTPORT_SIZE, "myHost = \"%d.%d.%d.%d\";\nmyPort = \"%d\";\n",
+        ip[0], ip[1], ip[2], ip[3], WEBSOCKET_PORT
+    );
+    Serial.print("Resolved host port to: ");
+    Serial.println(HostPort_js);
 
     Serial.println("Starting PWM signal channels...");
     for(int i = 0; i < NUM_MOTORS; i++){
@@ -190,6 +206,11 @@ void loop()
 void handle_root(){
     Serial.println("root request");
     server.send(200, "text/html", webpage_html);
+}
+
+//called on requests for hostPort.js
+void handle_hostPort(){
+    server.send(200, "text/html", HostPort_js);
 }
 
 //called on page not found (404)

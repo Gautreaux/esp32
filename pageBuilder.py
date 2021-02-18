@@ -10,11 +10,16 @@ LINK_SRC_REGEX = '<\s*link\s*rel\s*=\s*"([a-zA-Z0-9.-_]*)"\s*href\s*=\s*"([a-zA-
 
 RSTRING_DELIM = '&'
 
+EXCLUDED_FILES = ["hostPort.js"]
+
 # includes the '.' in the return value
 def fileType(file:str) -> str:
     return file[file.rfind('.'):].lower()
 
 def genericEmbed(filePath:str, tag:str) -> str:
+    if filePath in EXCLUDED_FILES:
+        print(f"Skipping file {filePath} reason: in excluded list.")
+        return ""
     outData = ""
     try:
         with open(filePath, 'r') as jsF:
@@ -64,6 +69,9 @@ def translatePage(sourceFilePath:str) -> bool:
                         print(f"Found embedable style: {y.group(2)}")
                         outLine = addEscapes(embedCSS(y.group(2)))
                     else:
+                        outLine = line
+
+                    if(outLine == ""):
                         outLine = line
                     
                     #check if the ending of the rawstring is in the line

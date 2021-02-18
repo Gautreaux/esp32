@@ -3,9 +3,9 @@ const char webpage_html[] PROGMEM = R"&(
 <script>
 mySocket = null; //global variable for storing the socket 
 
-//TODO - fix this for the future
-myHost = "192.168.4.1";
-myPort = "81";
+//These are provided by the server and updated automatically
+// myHost = "192.168.4.1";
+// myPort = "81";
 
 //called once on page load
 function initFunction() {
@@ -155,6 +155,7 @@ function processCommand(cmd){
     return false;
 }
 </script>
+<script src = "hostPort.js"></script>
 <script>
 function updateLED() {
     let led_elements = document.getElementsByClassName("LEDCHECK");

@@ -1,8 +1,8 @@
 mySocket = null; //global variable for storing the socket 
 
-//TODO - fix this for the future
-myHost = "192.168.4.1";
-myPort = "81";
+//These are provided by the server and updated automatically
+// myHost = "192.168.4.1";
+// myPort = "81";
 
 //called once on page load
 function initFunction() {
