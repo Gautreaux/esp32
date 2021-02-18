@@ -42,6 +42,10 @@
 #define WEBSERVER_PORT 80
 #define WEBSOCKET_PORT 81
 
+#define DIRECTION_FORWARD 1
+#define DIRECTION_NONE 0
+#define DIRECTION_BACKWARDS -1
+
 WebServer server(WEBSERVER_PORT); 
 WebSocketsServer wss(WEBSOCKET_PORT);
 
@@ -59,6 +63,16 @@ const MotorStructs[] = {
     {5, 6, 7},
     {26, 8, 9},
     {25, 10, 11}
+};
+
+//maintains a list of the last directions the motor was moving
+uint8_t MotorDirections[] = {
+    DIRECTION_NONE,
+    DIRECTION_NONE,
+    DIRECTION_NONE,
+    DIRECTION_NONE,
+    DIRECTION_NONE,
+    DIRECTION_NONE
 };
 
 //need all the zeros to reserve the maximum conceivable amount of space
@@ -288,15 +302,18 @@ bool messageHandler(uint8_t* const payload, const size_t length){
 
         for(int i = jsID; i < NUM_MOTORS; i++){
             float abs_y = ((y < 0) ? -y : y);
-            if(y > DEADZONE){
-              mcp.digitalWrite(MotorStructs[i].A1_Pin, HIGH);
-              mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
-            }else if(y < -DEADZONE){
-              mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
-              mcp.digitalWrite(MotorStructs[i].A2_Pin, HIGH);
-            }else{
-              mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
-              mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
+            if(y > DEADZONE && MotorDirections[i] != DIRECTION_FORWARD){
+                mcp.digitalWrite(MotorStructs[i].A1_Pin, HIGH);
+                mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
+                MotorDirections[i] = DIRECTION_FORWARD;
+            }else if(y < -DEADZONE && MotorDirections[i] != DIRECTION_BACKWARDS){
+                mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
+                mcp.digitalWrite(MotorStructs[i].A2_Pin, HIGH);
+                MotorDirections[i] = DIRECTION_BACKWARDS;
+            }else if(MotorDirections[i] != DIRECTION_NONE){
+                mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
+                mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
+                MotorDirections[i] = DIRECTION_NONE;
             }
             uint8_t pwmVal = uint8_t(abs_y * PWM_MAX_INT);
             ledcWrite(i, pwmVal);
