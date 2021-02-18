@@ -94,7 +94,7 @@ function onSocketReceive(event) {
 
 //sends the input parameter into the socket
 function send(data) {
-    console.log(data);
+    //console.log(data);
     if (mySocket == null) {
         console.log("Cannot send data, socket is not connected: " + data);
     }

@@ -25,6 +25,15 @@
 
 #define BUTTON_PIN 23
 
+#define LED1_RED_PWM_CHANNEL 0
+#define LED1_GREEN_PWM_CHANNEL 1
+#define LED2_RED_PWM_CHANNEL 2
+#define LED2_GREEN_PWM_CHANNEL 3
+
+#define PWM_FREQUENCY 5000
+#define PWM_RESOLUTION 8
+#define PWM_MAX_INT ((1 << PWM_RESOLUTION) - 1)
+
 //when enabled will cause the ESP to connect
 //  to an existing wifi network given by the information,
 //  in the clientSecrets.h file
@@ -157,6 +166,22 @@ void setup()
     wss.begin();
     wss.onEvent(handle_webSocketEvent);
 
+    Serial.println("Starting PWM signal channels...");
+    ledcSetup(LED1_RED_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+    ledcSetup(LED1_GREEN_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+    ledcSetup(LED2_RED_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+    ledcSetup(LED2_GREEN_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
+
+    ledcAttachPin(RED_1, LED1_RED_PWM_CHANNEL);
+    ledcAttachPin(GREEN_1, LED1_GREEN_PWM_CHANNEL);
+    ledcAttachPin(RED_2, LED2_RED_PWM_CHANNEL);
+    ledcAttachPin(GREEN_2, LED2_GREEN_PWM_CHANNEL);
+
+    ledcWrite(LED1_RED_PWM_CHANNEL, 0);
+    ledcWrite(LED1_GREEN_PWM_CHANNEL, 0);
+    ledcWrite(LED2_RED_PWM_CHANNEL, 0);
+    ledcWrite(LED2_GREEN_PWM_CHANNEL, 0);
+
     Serial.println("Initialization Completed.");
 }
 
@@ -179,6 +204,11 @@ void loop()
             wss.broadcastTXT("b0");
         }
     }
+
+    // for(int i = 255; i >= 0; i--){
+    //   ledcWrite(LED1_RED_PWM_CHANNEL, i);
+    //   delay(20);
+    // }
 
     //check if the button is pressed now
 
@@ -282,18 +312,27 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         ss >> x >> y;
         // Serial.printf("%s\n", payload);
         // Serial.printf("J: %d %.3f %.3f\n", jsID, x, y);
+        // Serial.printf("V: %dg %dr\n", 
+        //   uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)),
+        //   uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0))
+        // );
         // Serial.printf("%d\n", jsID);
 
-        if(y > .5){
-            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), HIGH);
-            digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
-        }else if(y < -.5){
-            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
-            digitalWrite(((jsID == 0) ? RED_1 : RED_2), HIGH);
-        }else{
-            digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
-            digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
-        }
+        ledcWrite(((jsID == 0) ? LED1_GREEN_PWM_CHANNEL : LED2_GREEN_PWM_CHANNEL),
+            uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)));
+        ledcWrite(((jsID == 0) ? LED1_RED_PWM_CHANNEL : LED2_RED_PWM_CHANNEL),
+            uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
+
+        // if(y > .5){
+        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), HIGH);
+        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
+        // }else if(y < -.5){
+        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
+        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), HIGH);
+        // }else{
+        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
+        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
+        // }
         return true;
     default:
         return false;
