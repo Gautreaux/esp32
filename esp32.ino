@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
-// #include "Adafruit_MCP23017.h"
+#include "Adafruit_MCP23017.h"
 #include <vector>
 #include <sstream>
 
@@ -13,22 +13,6 @@
 #include <WebServer.h>
 
 #include <WebSocketsServer.h>
-
-#define MAX_PINS 40
-
-#define GREEN_2 13
-#define BLUE_2 14
-#define RED_1 15
-#define RED_2 16
-#define GREEN_1 17
-#define BLUE_1 18
-
-#define BUTTON_PIN 23
-
-#define LED1_RED_PWM_CHANNEL 0
-#define LED1_GREEN_PWM_CHANNEL 1
-#define LED2_RED_PWM_CHANNEL 2
-#define LED2_GREEN_PWM_CHANNEL 3
 
 #define PWM_FREQUENCY 5000
 #define PWM_RESOLUTION 8
@@ -50,15 +34,34 @@
 
 //21, 22 removed because SDA/SCL
 // const std::vector<int> gpioPins{1, 2, 3, 4, 5, 12, 13, 14, 15, 16, 17, 18, 19, 23, 25, 26, 27, 32, 33, 34, 35, 36, 39};
-const std::vector<int> gpioPins{RED_1, GREEN_1, BLUE_1, RED_2, GREEN_2, BLUE_2};
 
 //Tracks if button was pressed in the last loop (true)
-bool wasButtonPressedLastLoop = false;
+// bool wasButtonPressedLastLoop = false;
 
 WebServer server(80); 
 WebSocketsServer wss(81);
 
-// Adafruit_MCP23017 mcp;
+struct MotorAbstract{
+    uint8_t EN_Pin; //ON ESP32
+    uint8_t A1_Pin; //ON MCP23017
+    uint8_t A2_Pin; //ON MCP23017
+}
+
+//Stores all the motor information
+const MotorStructs[] = {
+    {13, 0, 1},
+    {12, 2, 3},
+    {14, 4, 5},
+    {5, 6, 7},
+    {26, 8, 9},
+    {25, 10, 11}
+};
+
+#define NUM_MOTORS (6)
+
+#define DEADZONE (0.05f)
+
+Adafruit_MCP23017 mcp;
 
 //scan the i2c bus and print all the addresses found
 void scanI2C()
@@ -96,30 +99,16 @@ void setup()
     Serial.begin(9600); // Initialize the Serial interface with baud rate of 9600
     Serial.println("Beginning Initialization.");
 
-    Serial.print("GPIO Checksum: ");
-    Serial.println(gpioPins.size());
 
-    for (auto i : gpioPins)
+
+    Serial.println("Enabling MCP23017/GPIO pins");
+    mcp.begin();
+    for (int i = 0; i < NUM_MOTORS; i++)
     {
-        Serial.print("Enabling: ");
-        Serial.println(i);
-        pinMode(i, OUTPUT);
+        mcp.pinMode(MotorStructs[i].A1_Pin, OUTPUT);
+        mcp.pinMode(MotorStructs[i].A2_Pin, OUTPUT);
+        pinMode(MotorStructs[i].EN_Pin, OUTPUT);
     }
-
-    // scanI2C();
-
-    // Serial.println("Enabling MCP23017 pins");
-    // mcp.begin();
-    // for (int i = 0; i < 16; i++)
-    // {
-    //     mcp.pinMode(0, OUTPUT);
-    // }
-
-    // pinMode(PROBE_PIN, OUTPUT);
-
-    // for(int i = 0; i < MAX_PINS; i++){
-    //     pinMode(i, OUTPUT);
-    // }
 
 #ifdef RUN_AS_CLIENT
     WiFi.begin(SSID, PASSWORD);
@@ -133,19 +122,19 @@ void setup()
         Serial.print(" ");
 
         //light show for while retrying
-        if((toggle = !toggle)){
-            digitalWrite(RED_1, HIGH);
-            digitalWrite(RED_2, LOW);
-        }else{
-            digitalWrite(RED_1, LOW);
-            digitalWrite(RED_2, HIGH);
-        }
+        // if((toggle = !toggle)){
+        //     digitalWrite(RED_1, HIGH);
+        //     digitalWrite(RED_2, LOW);
+        // }else{
+        //     digitalWrite(RED_1, LOW);
+        //     digitalWrite(RED_2, HIGH);
+        // }
     }
     Serial.println("Connected");
 
     //turn off the light show
-    digitalWrite(RED_1, LOW);
-    digitalWrite(RED_2, LOW);
+    // digitalWrite(RED_1, LOW);
+    // digitalWrite(RED_2, LOW);
 #else
     WiFi.mode(WIFI_AP);
     WiFi.softAP(SSID, PASSWORD);
@@ -167,20 +156,11 @@ void setup()
     wss.onEvent(handle_webSocketEvent);
 
     Serial.println("Starting PWM signal channels...");
-    ledcSetup(LED1_RED_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-    ledcSetup(LED1_GREEN_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-    ledcSetup(LED2_RED_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-    ledcSetup(LED2_GREEN_PWM_CHANNEL, PWM_FREQUENCY, PWM_RESOLUTION);
-
-    ledcAttachPin(RED_1, LED1_RED_PWM_CHANNEL);
-    ledcAttachPin(GREEN_1, LED1_GREEN_PWM_CHANNEL);
-    ledcAttachPin(RED_2, LED2_RED_PWM_CHANNEL);
-    ledcAttachPin(GREEN_2, LED2_GREEN_PWM_CHANNEL);
-
-    ledcWrite(LED1_RED_PWM_CHANNEL, 0);
-    ledcWrite(LED1_GREEN_PWM_CHANNEL, 0);
-    ledcWrite(LED2_RED_PWM_CHANNEL, 0);
-    ledcWrite(LED2_GREEN_PWM_CHANNEL, 0);
+    for(int i = 0; i < NUM_MOTORS; i++){
+        ledcSetup(i, PWM_RESOLUTION, PWM_RESOLUTION);
+        ledcWrite(i, 0);
+        ledcAttachPin(MotorStructs[i].EN_Pin, i);
+    }
 
     Serial.println("Initialization Completed.");
 }
@@ -191,50 +171,19 @@ void loop()
     server.handleClient();
     wss.loop();
 
-    if(digitalRead(BUTTON_PIN) == HIGH){
-        if(wasButtonPressedLastLoop == false){
-            wasButtonPressedLastLoop = true;
-            // Serial.println("PRESSED");
-            wss.broadcastTXT("b1");
-        }
-    }else{
-        if(wasButtonPressedLastLoop == true){
-            wasButtonPressedLastLoop = false;
-            // Serial.println("RELEASED");
-            wss.broadcastTXT("b0");
-        }
-    }
-
-    // for(int i = 255; i >= 0; i--){
-    //   ledcWrite(LED1_RED_PWM_CHANNEL, i);
-    //   delay(20);
+    // if(digitalRead(BUTTON_PIN) == HIGH){
+    //     if(wasButtonPressedLastLoop == false){
+    //         wasButtonPressedLastLoop = true;
+    //         // Serial.println("PRESSED");
+    //         wss.broadcastTXT("b1");
+    //     }
+    // }else{
+    //     if(wasButtonPressedLastLoop == true){
+    //         wasButtonPressedLastLoop = false;
+    //         // Serial.println("RELEASED");
+    //         wss.broadcastTXT("b0");
+    //     }
     // }
-
-    //check if the button is pressed now
-
-    // delay(1000);
-
-    // for (auto i : gpioPins)
-    // {
-    //     digitalWrite(i, LOW);
-    // }
-
-    // // for (int i = 0; i < 16; i++)
-    // // {
-    // //     mcp.digitalWrite(i, HIGH);
-    // // }
-
-    // delay(1000);
-
-    // for (auto i : gpioPins)
-    // {
-    //     digitalWrite(i, HIGH);
-    // }
-
-    // // for (int i = 0; i < 16; i++)
-    // // {
-    // //     mcp.digitalWrite(i, LOW);
-    // // }
 }
 
 //called on requests for the root webpage
@@ -298,10 +247,8 @@ bool messageHandler(uint8_t* const payload, const size_t length){
     switch (payload[0])
     {
     case 'L':
-        for(unsigned int i = 0; i < 6; i++){
-            digitalWrite(gpioPins.at(i), ((payload[i+1] == '0') ? LOW : HIGH));
-        }
-        return true;
+        Serial.println("L command depreciated with deprecation of dev board.");
+        return false;
     case 'J':
         ss << payload;
         char j;
@@ -318,21 +265,27 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         // );
         // Serial.printf("%d\n", jsID);
 
-        ledcWrite(((jsID == 0) ? LED1_GREEN_PWM_CHANNEL : LED2_GREEN_PWM_CHANNEL),
-            uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)));
-        ledcWrite(((jsID == 0) ? LED1_RED_PWM_CHANNEL : LED2_RED_PWM_CHANNEL),
-            uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
+        for(int i = jsID; i < NUM_MOTORS; i++){
+            float abs_y = ((y < 0) ? -y : y);
+            if(y > DEADZONE){
+              mcp.digitalWrite(MotorStructs[i].A1_Pin, HIGH);
+              mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
+            }else if(y < -DEADZONE){
+              mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
+              mcp.digitalWrite(MotorStructs[i].A2_Pin, HIGH);
+            }else{
+              mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
+              mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
+            }
+            uint8_t pwmVal = uint8_t(abs_y * PWM_MAX_INT);
+            ledcWrite(i, pwmVal);
+        }
 
-        // if(y > .5){
-        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), HIGH);
-        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
-        // }else if(y < -.5){
-        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
-        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), HIGH);
-        // }else{
-        //     digitalWrite(((jsID == 0) ? GREEN_1 : GREEN_2), LOW);
-        //     digitalWrite(((jsID == 0) ? RED_1 : RED_2), LOW);
-        // }
+        // ledcWrite(((jsID == 0) ? LED1_GREEN_PWM_CHANNEL : LED2_GREEN_PWM_CHANNEL),
+        //     uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)));
+        // ledcWrite(((jsID == 0) ? LED1_RED_PWM_CHANNEL : LED2_RED_PWM_CHANNEL),
+        //     uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
+
         return true;
     default:
         return false;
