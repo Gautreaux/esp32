@@ -281,10 +281,11 @@ bool messageHandler(uint8_t* const payload, const size_t length){
     std::stringstream ss;
     switch (payload[0])
     {
-    case 'L':
+    case 'L': {
         Serial.println("L command depreciated with deprecation of dev board.");
         return false;
-    case 'J':
+    }
+    case 'J': {
         ss << payload;
         char j;
         ss >> j;
@@ -300,24 +301,22 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         // );
         // Serial.printf("%d\n", jsID);
 
-        for(int i = jsID; i < NUM_MOTORS; i++){
-            float abs_y = ((y < 0) ? -y : y);
-            if(y > DEADZONE && MotorDirections[i] != DIRECTION_FORWARD){
-                mcp.digitalWrite(MotorStructs[i].A1_Pin, HIGH);
-                mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
-                MotorDirections[i] = DIRECTION_FORWARD;
-            }else if(y < -DEADZONE && MotorDirections[i] != DIRECTION_BACKWARDS){
-                mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
-                mcp.digitalWrite(MotorStructs[i].A2_Pin, HIGH);
-                MotorDirections[i] = DIRECTION_BACKWARDS;
-            }else if(MotorDirections[i] != DIRECTION_NONE){
-                mcp.digitalWrite(MotorStructs[i].A1_Pin, LOW);
-                mcp.digitalWrite(MotorStructs[i].A2_Pin, LOW);
-                MotorDirections[i] = DIRECTION_NONE;
-            }
-            uint8_t pwmVal = uint8_t(abs_y * PWM_MAX_INT);
-            ledcWrite(i, pwmVal);
+        //update l293d direction pins only when it changes
+        if(y > DEADZONE && MotorDirections[jsID] != DIRECTION_FORWARD){
+            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, HIGH);
+            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, LOW);
+            MotorDirections[jsID] = DIRECTION_FORWARD;
+        }else if(y < -DEADZONE && MotorDirections[jsID] != DIRECTION_BACKWARDS){
+            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, LOW);
+            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, HIGH);
+            MotorDirections[jsID] = DIRECTION_BACKWARDS;
+        }else if(MotorDirections[jsID] != DIRECTION_NONE){
+            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, LOW);
+            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, LOW);
+            MotorDirections[jsID] = DIRECTION_NONE;
         }
+        uint8_t pwmVal = uint8_t(((y < 0) ? -y : y) * PWM_MAX_INT);
+        ledcWrite(jsID, pwmVal);
 
         // ledcWrite(((jsID == 0) ? LED1_GREEN_PWM_CHANNEL : LED2_GREEN_PWM_CHANNEL),
         //     uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)));
@@ -325,8 +324,10 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         //     uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
 
         return true;
-    default:
+    }
+    default: {
         return false;
+    }
     }
     return false;
 }
