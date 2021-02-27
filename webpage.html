@@ -3,9 +3,11 @@
     <script src = "hostPort.js"></script>
     <script src = "functions.js"></script>
     <script src = "joystickLogic.js"></script>
+    <script src = "sliderLogic.js"></script>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="controlsStyles.css">
     <link rel="stylesheet" href="joystickStyles.css">
+    <link rel="stylesheet" href="sliderStyles.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 </head>
 
@@ -50,6 +52,9 @@
                         </div>
                     </div>
                 </div>
+                <div class="sliderWrapper">
+                    <input type="range" min="-1" max="1" value="0" step=".05" class="slider" oninput="sliderHandler(this.value, 0)">
+                </div>
             </div>
             <div class="controlStack">
                 <div class="joystickWrapper">
@@ -59,6 +64,9 @@
                             <div class="joystick"></div>
                         </div>
                     </div>
+                </div>
+                <div class="sliderWrapper">
+                    <input type="range" min=".05" max=".10" value=".075" step=".001" class="slider" oninput="sliderHandler(this.value, 1)">
                 </div>
             </div>
         </div>

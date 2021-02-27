@@ -7,16 +7,19 @@ mySocket = null; //global variable for storing the socket
 // myHost = "192.168.4.1";
 // myPort = "81";
 
+defaultHost = "192.168.0.199";
+defaultPort = "81";
+
 //called once on page load
 function initFunction() {
     if(typeof myHost == 'undefined') {
-        console.log("No host provided, defaulting to 192.168.0.199")
-        myHost = '192.168.0.199'
+        console.log("No host provided, defaulting to " + defaultHost);
+        myHost = defaultHost;
     }
 
     if(typeof myPort == 'undefined') {
-        console.log("No port provided, defaulting to 20462")
-        myPort = '20462'
+        console.log("No port provided, defaulting to " + defaultPort);
+        myPort = defaultPort;
     }
 
     let s = "ws://" + myHost + ":" + myPort;
@@ -150,7 +153,6 @@ function processCommand(cmd){
 
         return true;
     }
-
 
     return false;
 }
@@ -379,6 +381,14 @@ function sendJoystickVector(joystickIndex, joystickVector){
     send("J" + joystickIndex + " " + joystickVector[0].toFixed(3) + " " + joystickVector[1].toFixed(3));
 }
 </script>
+<script>
+
+function sliderHandler(value, sliderID){
+    // console.log(String(value) + " " + String(sliderID));
+    //No need to round because the input limits us anyway
+    send("S " + String(sliderID) + " " + String(value));
+}
+</script>
 <style>
 
 #contentBound{
@@ -401,7 +411,7 @@ function sendJoystickVector(joystickIndex, joystickVector){
 
 .controlStack{
     height: 100%;
-    width: 30%;
+    width: 45%;
     background-color: maroon;
     display: inline-block;
 }
@@ -478,6 +488,18 @@ function sendJoystickVector(joystickIndex, joystickVector){
     top:0px;
 }
 </style>
+<style>
+.sliderWrapper{
+    margin-top: 5%;
+    background-color: palevioletred;
+}
+
+.slider{
+    width: 100%;
+    margin: 2% auto;
+    /* position: absolute; */
+}
+</style>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 </head>
 
@@ -522,6 +544,9 @@ Turns green on websockets connection, red on failure
 </div>
 </div>
 </div>
+<div class="sliderWrapper">
+<input type="range" min="-1" max="1" value="0" step=".05" class="slider" oninput="sliderHandler(this.value, 0)">
+</div>
 </div>
 <div class="controlStack">
 <div class="joystickWrapper">
@@ -531,6 +556,9 @@ Turns green on websockets connection, red on failure
 <div class="joystick"></div>
 </div>
 </div>
+</div>
+<div class="sliderWrapper">
+<input type="range" min="0" max="1" value=".5" step=".025" class="slider" oninput="sliderHandler(this.value, 1)">
 </div>
 </div>
 </div>

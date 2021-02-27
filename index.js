@@ -4,16 +4,19 @@ mySocket = null; //global variable for storing the socket
 // myHost = "192.168.4.1";
 // myPort = "81";
 
+defaultHost = "192.168.0.199";
+defaultPort = "81";
+
 //called once on page load
 function initFunction() {
     if(typeof myHost == 'undefined') {
-        console.log("No host provided, defaulting to 192.168.0.199")
-        myHost = '192.168.0.199'
+        console.log("No host provided, defaulting to " + defaultHost);
+        myHost = defaultHost;
     }
 
     if(typeof myPort == 'undefined') {
-        console.log("No port provided, defaulting to 20462")
-        myPort = '20462'
+        console.log("No port provided, defaulting to " + defaultPort);
+        myPort = defaultPort;
     }
 
     let s = "ws://" + myHost + ":" + myPort;
@@ -147,7 +150,6 @@ function processCommand(cmd){
 
         return true;
     }
-
 
     return false;
 }

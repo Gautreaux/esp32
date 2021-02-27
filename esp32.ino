@@ -53,10 +53,11 @@ struct MotorAbstract{
     uint8_t EN_Pin; //ON ESP32
     uint8_t A1_Pin; //ON MCP23017
     uint8_t A2_Pin; //ON MCP23017
-}
+};
 
 //Stores all the motor information
-const MotorStructs[] = {
+// Array of MotorAbstracts initalized to proper values
+const MotorAbstract MotorStructs[] = {
     {13, 0, 1},
     {12, 2, 3},
     {14, 4, 5},
@@ -75,46 +76,22 @@ uint8_t MotorDirections[] = {
     DIRECTION_NONE
 };
 
-//need all the zeros to reserve the maximum conceivable amount of space
+// struct ServoAbstract{
+//     uint8_t Signal_Pin;
+// };
+
+const uint8_t ServoStructs[] = {32, 33};
+
+//For serving the ip and port information to the client
 #define HOSTPORT_SIZE 64
 char HostPort_js[64];
 
-#define NUM_MOTORS (6)
+#define NUM_MOTORS (2)
+#define NUM_SERVOS (2)
 
 #define DEADZONE (0.05f)
 
 Adafruit_MCP23017 mcp;
-
-//scan the i2c bus and print all the addresses found
-void scanI2C()
-{
-    byte count = 0; // total i2c devices found
-
-    for (byte i = 8; i < 120; i++)
-    {
-        Wire.beginTransmission(i);
-        if (Wire.endTransmission() == 0)
-        {
-            Serial.print("Found I2C Device: ");
-            Serial.print(" (0x");
-            Serial.print(i, HEX);
-            Serial.println(")");
-            count++;
-            delay(1); //ms
-        }
-    }
-    Serial.print("I2C scan complete. ");
-    if (count > 0)
-    {
-        Serial.print("Found ");
-        Serial.print(count, HEX);
-        Serial.println(" Device(s).");
-    }
-    else
-    {
-        Serial.println("Found no Devices");
-    }
-}
 
 void setup()
 {
@@ -182,14 +159,20 @@ void setup()
     snprintf(HostPort_js, HOSTPORT_SIZE, "myHost = \"%d.%d.%d.%d\";\nmyPort = \"%d\";\n",
         ip[0], ip[1], ip[2], ip[3], WEBSOCKET_PORT
     );
-    Serial.print("Resolved host port to: ");
-    Serial.println(HostPort_js);
+    Serial.print("Resolved host port to: <<<\n");
+    Serial.print(HostPort_js);
+    Serial.println(">>>");
 
     Serial.println("Starting PWM signal channels...");
     for(int i = 0; i < NUM_MOTORS; i++){
-        ledcSetup(i, PWM_RESOLUTION, PWM_RESOLUTION);
+        ledcSetup(i, PWM_FREQUENCY, PWM_RESOLUTION);
         ledcWrite(i, 0);
         ledcAttachPin(MotorStructs[i].EN_Pin, i);
+    }
+    for(int i = 0; i < NUM_SERVOS; i++){
+        ledcSetup(i+NUM_MOTORS, 50, PWM_RESOLUTION);
+        ledcWrite(i+NUM_MOTORS, 0);
+        ledcAttachPin(ServoStructs[i], i+NUM_MOTORS);
     }
 
     Serial.println("Initialization Completed.");
@@ -323,6 +306,18 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         // ledcWrite(((jsID == 0) ? LED1_RED_PWM_CHANNEL : LED2_RED_PWM_CHANNEL),
         //     uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
 
+        return true;
+    }
+    case 'S': {
+        ss << payload;
+        char s; 
+        ss >> s;
+        int sliderID;
+        ss >> sliderID;
+        float sliderPosition;
+        ss >> sliderPosition;
+        Serial.printf("Slider: %d %.3f\n", sliderID, sliderPosition);
+        ledcWrite(sliderID + NUM_MOTORS, (sliderPosition * PWM_MAX_INT));
         return true;
     }
     default: {

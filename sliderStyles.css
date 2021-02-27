@@ -1,0 +1,10 @@
+.sliderWrapper{
+    margin-top: 5%;
+    background-color: palevioletred;
+}
+
+.slider{
+    width: 100%;
+    margin: 2% auto;
+    /* position: absolute; */
+}
