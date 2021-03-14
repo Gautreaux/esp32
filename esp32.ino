@@ -24,7 +24,7 @@
 //when disabled, will cause the ESP to
 //  host a new wifi network with the information
 //  in the connectionSecrets.h file
-#define RUN_AS_CLIENT
+// #define RUN_AS_CLIENT
 
 #ifdef RUN_AS_CLIENT
 #include "clientSecrets.h"
@@ -86,7 +86,7 @@ const uint8_t ServoStructs[] = {32, 33};
 #define HOSTPORT_SIZE 64
 char HostPort_js[64];
 
-#define NUM_MOTORS (2)
+#define NUM_MOTORS (6)
 #define NUM_SERVOS (2)
 
 #define DEADZONE (0.05f)
@@ -155,7 +155,11 @@ void setup()
 
 
     // pack host and port info into the buffer
+ #ifdef RUN_AS_CLIENT
     IPAddress ip = WiFi.localIP();
+ #else
+    IPAddress ip = WiFi.softAPIP();
+ #endif
     snprintf(HostPort_js, HOSTPORT_SIZE, "myHost = \"%d.%d.%d.%d\";\nmyPort = \"%d\";\n",
         ip[0], ip[1], ip[2], ip[3], WEBSOCKET_PORT
     );
@@ -257,6 +261,49 @@ void handle_webSocketEvent(uint8_t num, WStype_t type,
     }
 }
 
+int8_t getDirectionFromValue(const double value){
+    if(value > DEADZONE){
+        return DIRECTION_FORWARD;
+    }else if(value < -DEADZONE){
+        return DIRECTION_BACKWARDS;
+    }else{
+        return DIRECTION_NONE;
+    }
+}
+
+void driveDCMotor(const uint8_t motorID, const double value)
+{
+    auto direction = getDirectionFromValue(value);
+    auto magnitude = abs(value);
+
+    //update l293d direction pins only when it changes
+    if (MotorDirections[motorID] != direction)
+    {
+        //switch direction
+        if (direction == DIRECTION_FORWARD)
+        {
+            mcp.digitalWrite(MotorStructs[motorID].A1_Pin, HIGH);
+            mcp.digitalWrite(MotorStructs[motorID].A2_Pin, LOW);
+            MotorDirections[motorID] = DIRECTION_FORWARD;
+        }
+        else if (direction == DIRECTION_BACKWARDS)
+        {
+            mcp.digitalWrite(MotorStructs[motorID].A1_Pin, LOW);
+            mcp.digitalWrite(MotorStructs[motorID].A2_Pin, HIGH);
+            MotorDirections[motorID] = DIRECTION_BACKWARDS;
+        }
+        else
+        {
+            mcp.digitalWrite(MotorStructs[motorID].A1_Pin, LOW);
+            mcp.digitalWrite(MotorStructs[motorID].A2_Pin, LOW);
+            MotorDirections[motorID] = DIRECTION_NONE;
+        }
+    }
+
+    ledcWrite(motorID, magnitude * PWM_MAX_INT);
+}
+
+
 //called to process text messages
 //  returns true if message was processed ok
 //  else returns false
@@ -264,10 +311,6 @@ bool messageHandler(uint8_t* const payload, const size_t length){
     std::stringstream ss;
     switch (payload[0])
     {
-    case 'L': {
-        Serial.println("L command depreciated with deprecation of dev board.");
-        return false;
-    }
     case 'J': {
         ss << payload;
         char j;
@@ -276,37 +319,21 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         ss >> jsID;
         float x,y;
         ss >> x >> y;
-        // Serial.printf("%s\n", payload);
-        // Serial.printf("J: %d %.3f %.3f\n", jsID, x, y);
-        // Serial.printf("V: %dg %dr\n", 
-        //   uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)),
-        //   uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0))
-        // );
-        // Serial.printf("%d\n", jsID);
 
-        //update l293d direction pins only when it changes
-        if(y > DEADZONE && MotorDirections[jsID] != DIRECTION_FORWARD){
-            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, HIGH);
-            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, LOW);
-            MotorDirections[jsID] = DIRECTION_FORWARD;
-        }else if(y < -DEADZONE && MotorDirections[jsID] != DIRECTION_BACKWARDS){
-            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, LOW);
-            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, HIGH);
-            MotorDirections[jsID] = DIRECTION_BACKWARDS;
-        }else if(MotorDirections[jsID] != DIRECTION_NONE){
-            mcp.digitalWrite(MotorStructs[jsID].A1_Pin, LOW);
-            mcp.digitalWrite(MotorStructs[jsID].A2_Pin, LOW);
-            MotorDirections[jsID] = DIRECTION_NONE;
-        }
-        uint8_t pwmVal = uint8_t(((y < 0) ? -y : y) * PWM_MAX_INT);
-        ledcWrite(jsID, pwmVal);
-
-        // ledcWrite(((jsID == 0) ? LED1_GREEN_PWM_CHANNEL : LED2_GREEN_PWM_CHANNEL),
-        //     uint32_t(PWM_MAX_INT*((y > .05) ? y : 0)));
-        // ledcWrite(((jsID == 0) ? LED1_RED_PWM_CHANNEL : LED2_RED_PWM_CHANNEL),
-        //     uint32_t(PWM_MAX_INT*((y < -.05) ? -y : 0)));
+        driveDCMotor(jsID, y);
+        driveDCMotor(jsID+2, y);
+        driveDCMotor(jsID+4, x);
 
         return true;
+    }
+    case 'L': {
+        Serial.println("L command depreciated with deprecation of dev board.");
+        return false;
+    }
+    case 'M': {
+        char motorID = payload[1] - '0';
+        double value = atof((const char*)(payload+2));
+        driveDCMotor(motorID, value);
     }
     case 'S': {
         ss << payload;
@@ -316,7 +343,7 @@ bool messageHandler(uint8_t* const payload, const size_t length){
         ss >> sliderID;
         float sliderPosition;
         ss >> sliderPosition;
-        Serial.printf("Slider: %d %.3f\n", sliderID, sliderPosition);
+        //Serial.printf("Slider: %d %.3f\n", sliderID, sliderPosition);
         ledcWrite(sliderID + NUM_MOTORS, (sliderPosition * PWM_MAX_INT));
         return true;
     }

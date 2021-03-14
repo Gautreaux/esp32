@@ -545,7 +545,7 @@ Turns green on websockets connection, red on failure
 </div>
 </div>
 <div class="sliderWrapper">
-<input type="range" min="-1" max="1" value="0" step=".05" class="slider" oninput="sliderHandler(this.value, 0)">
+<input type="range" min=".05" max=".10" value=".75" step=".001" class="slider" oninput="sliderHandler(this.value, 0)">
 </div>
 </div>
 <div class="controlStack">
@@ -558,7 +558,7 @@ Turns green on websockets connection, red on failure
 </div>
 </div>
 <div class="sliderWrapper">
-<input type="range" min="0" max="1" value=".5" step=".025" class="slider" oninput="sliderHandler(this.value, 1)">
+<input type="range" min=".05" max=".10" value=".075" step=".001" class="slider" oninput="sliderHandler(this.value, 1)">
 </div>
 </div>
 </div>
